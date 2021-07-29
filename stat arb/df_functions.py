@@ -49,7 +49,6 @@ def dataframe_cleaner(dataframe):
             dataframe.pop(ticker)
             
 
-
 def ticker_pairs(tickers):
     """Create pairs of the tickers in the dataframe"""
     pairs = []
@@ -60,6 +59,7 @@ def ticker_pairs(tickers):
                 pairs.append(pair)
                                
     return pairs
+
 
 @jit(nopython = True)
 def create_pairs(df_columns):
@@ -73,6 +73,7 @@ def create_pairs(df_columns):
                 pairs.append(pair)
                 
     return pairs
+
 
 def hedge_ratio(a, a_data, b, b_data):
     """Linear Regression, a, first ticker in pair, is x
@@ -100,7 +101,6 @@ def check_stationarity(a, b, a_data, b_data, alpha):
     
     else:
         return {'adfuller': -1, 'ratio': -1, 'spread': -1}
-
 
     
 def halflife(spread):
