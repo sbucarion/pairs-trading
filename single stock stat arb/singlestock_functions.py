@@ -80,8 +80,8 @@ def trade_indicators(tickers_dict, price_dataframe):
         
         zscore = (data - data.mean()) / np.std(data)
         
-        if zscore[-1] > 2:# and zscore[-2] < 2:
+        if zscore[-1] > 2 and zscore[-2] < 2:
             print("Short {}".format(ticker))
 
-        if zscore[-1] < -2:# and zscore[-2] > -2:
+        if zscore[-1] < -2 and zscore[-2] > -2:
             print("Long {}".format(ticker))           
