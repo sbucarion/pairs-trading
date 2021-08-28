@@ -1,6 +1,8 @@
 # pairs-trading
 Generate trading signals on stationary stock pairs
 
+Skills: Time Series Analysis (Cointegration -> scikit), Stock Data Collection (Yahoo_fin), Data Storage (pandas)
+
 #Single Stock Stat Arb: 
 Find stationary stocks using the past 5 years of data. Trade the stationary stocks when their zscore rises or falls two standard deviations.
 Zscore length is calculated using the Ornstein-Uhlenbeck process to find the half life of a mean reverting time series
