@@ -15,30 +15,46 @@ from datetime import timedelta
 import datetime
 from datetime import date
 import time
-
-def ticker_data(ticker, start_date):
-    """Gets ticker data for the passed ticker within the specified time period"""
-    data = si.get_data(ticker, start_date = start_date)['adjclose']
-    return data
+import warnings
 
 
-def ticker_df(tickers, start_date):
-    """Creates a dataframe with the data from all the passed tickers
-    using the ticker_data function"""
-    df = pd.DataFrame()
-    for ticker in tickers:
-        df[ticker] = ticker_data(ticker, start_date)
+def ticker_data(ticker_list, start_date, end_date):
+    #Generate dates for stationarity and trading for dataframe
+    indexes = get_data('AAPL', start_date, end_date).index
+    df = pd.DataFrame(index = indexes)
+    
+    #Input historical data for each ticker into dataframe
+    for ticker in ticker_list:
+        try:
+            df[ticker] = get_data(ticker, start_date = start_date, end_date = end_date)['adjclose']
+            
+        except Exception as e:
+            print(ticker)
+            print(e)
+
+            
+    #Remove tickers that did not pull data correctly        
+    for ticker in df:
+        if sum(df[ticker]) > 0:
+            continue
+            
+        else:
+            df.pop(ticker)
         
     return df
 
 
-def dataframe_cleaner(dataframe):
-    """Removes tickers with data less than the specificed date"""
-    for ticker in dataframe.columns:
-        if True in list(dataframe[ticker].isnull()):
-            dataframe.pop(ticker)
+#Remove non stationary tickers from the dataframes
+def stationarity(training_df, trading_df, alpha):
+    for ticker in training_df:
+        adf = adfuller(training_df[ticker])[1] #Test to check for stationarity
+        
+        if adf > alpha:
+            training_df.pop(ticker)
+            trading_df.pop(ticker) 
 
-            
+
+#Used to create lookback length for trading period
 def halflife(spread):
     """Regression on the pairs spread to find lookback
         period for trading"""
@@ -52,36 +68,47 @@ def halflife(spread):
     res = sm.OLS(y_ret,x_lag_constant).fit()
     halflife = -np.log(2) / res.params[1]
     halflife = int(round(halflife))
-    return halflife            
+    return halflife
 
 
-def stationary_tickers(price_dataframe, alpha):
-    """Passes ticker data through adf test and if the
-        p-value is less than the alpha we add the ticker
-        and its halflife to a dictionary"""
-    temp_dict = dict()
+#Create trading spread for each stationary tickers
+def ticker_spread(training_data, testing_data):
+    hl = halflife(training_data)   
+    spread = testing_data.iloc[-hl:]   
     
-    for ticker in price_dataframe.columns:
-        data = price_dataframe[ticker][:-100]
-        adf = adfuller(data)[1]
+    spread = (spread - spread.mean()) / np.std(spread)
+    
+    return spread
+
+
+#Generate trade signals if the zscore of spread crosses +- 2 standard deviations
+def trade_signals(training_data, testing_data):   
+    for ticker in testing_data:
+        spread = ticker_spread(training_data[ticker], testing_data[ticker])
         
-        if adf < alpha:
-            temp_dict[ticker] = halflife(data)
+        if spread[-1] > 2 and spread[-2] < 2:
+            print("Short", ticker)
             
-    return temp_dict
+        if spread[-1] < -2 and spread[-2] > -2:
+            print("Long", ticker)
 
+            
+#Wrapper Function to store all algorithm processes
+def trades(start_date, end_date, tickers, alpha):
+    df = ticker_data(tickers, sd, ed)
+    coint_df = df.iloc[:-100]
+    trading_df = df.iloc[-100:]
 
-def trade_indicators(tickers_dict, price_dataframe):
-    """Check all stationary tickers to see if their zscore just
-        crossed the two standard deviation threshold"""
-    for ticker in tickers_dict.keys():
-        hl = tickers_dict[ticker]
-        data = price_dataframe[ticker][-hl:]
-        
-        zscore = (data - data.mean()) / np.std(data)
-        
-        if zscore[-1] > 2 and zscore[-2] < 2:
-            print("Short {}".format(ticker))
+    stationarity(coint_df, trading_df, alpha)
 
-        if zscore[-1] < -2 and zscore[-2] > -2:
-            print("Long {}".format(ticker))           
+    trade_signals(coint_df, trading_df)         
+
+    
+start_date = date.today() - timedelta(days = 67, weeks = 260)
+end_date = date.today() + timedelta(days = 1)
+
+alpha = 0.01
+#tickers = ['AAPL','AXP']
+tickers = si.tickers_sp500()
+
+trades(start_date, end_date, tickers, alpha)
