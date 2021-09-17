@@ -108,7 +108,7 @@ start_date = date.today() - timedelta(days = 67, weeks = 260)
 end_date = date.today() + timedelta(days = 1)
 
 alpha = 0.01
-#tickers = ['AAPL','AXP']
+
 tickers = si.tickers_sp500()
 
 trades(start_date, end_date, tickers, alpha)
