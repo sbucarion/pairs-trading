@@ -1,3 +1,6 @@
+## OLD (REFER TO EQUITY MEAN REVERSION AND EQUITY PAIRS TRADING REPOS)
+
+
 # pairs-trading
 Generate trading signals on stationary stock pairs
 
